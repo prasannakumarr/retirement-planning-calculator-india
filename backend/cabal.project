@@ -1,0 +1,12 @@
+packages: .
+
+-- Warp's `x509` flag pulls in crypton-x509 -> crypton, whose hand-written
+-- x86 assembly does not assemble under the clang that ships with recent
+-- macOS/Xcode (it fails in `bignum_emontredc_8n.S` with "invalid operand for
+-- instruction").
+--
+-- That flag only exists to expose the client's TLS certificate to the
+-- application. This server speaks plain HTTP on localhost and never asks for
+-- a client certificate, so turning the flag off costs us nothing and removes
+-- a large, fragile C dependency from the build.
+constraints: warp -x509

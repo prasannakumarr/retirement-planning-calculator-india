@@ -1,0 +1,35 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+*.sw?
+
+# Environment and secrets
+.env
+.env.*
+*.local
+*.pem
+*.key
+
+# Logs
+*.log
+logs/
+
+# Frontend (Node / Vite)
+node_modules/
+dist/
+dist-ssr/
+.vite/
+
+# Backend (Haskell / cabal / stack)
+dist-newstyle/
+.stack-work/
+cabal.project.local*
+.ghc.environment.*
+*.hi
+*.o
+*.dyn_hi
+*.dyn_o

@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: haskell-actions/setup@v2
+        with:
+          ghc-version: '9.6'
+          cabal-version: '3.14'
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cabal/store
+            backend/dist-newstyle
+          key: cabal-${{ runner.os }}-${{ hashFiles('backend/*.cabal', 'backend/cabal.project') }}
+      - run: cabal update
+      - run: cabal build
+      # The server runs its arithmetic self-checks on start-up and exits
+      # non-zero if any fail, so booting it and hitting /api/health is the test.
+      - name: Self-checks and smoke test
+        run: |
+          cabal run -v0 &
+          for i in $(seq 1 30); do
+            curl -sf http://127.0.0.1:8080/api/health && exit 0
+            sleep 1
+          done
+          exit 1
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run build
