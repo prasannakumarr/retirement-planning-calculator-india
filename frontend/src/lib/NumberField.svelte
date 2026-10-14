@@ -1,41 +1,19 @@
 <script>
-  /*
-   * NumberField.svelte — one labelled numeric input, optionally with a slider.
-   *
-   * WHERE THIS FITS: the building block of InputPanel.svelte. Every question
-   * the calculator asks is one of these.
-   *
-   * The slider is the reason this component exists in this shape. The whole
-   * point of the app is to show how the outcome moves when an assumption
-   * moves, and dragging a slider while the charts redraw communicates that far
-   * better than typing a number and pressing a button. The text box is kept
-   * alongside it because sliders are hopeless for entering an exact salary.
-   */
   let {
     label,
     value = $bindable(),
     min = 0,
     max = 100,
     step = 1,
-    /** Shown before the input, e.g. the rupee sign. */
     prefix = '',
-    /** Shown after the input, e.g. '%' or 'years'. */
     suffix = '',
-    /** One line under the field explaining what to put in it. */
     hint = '',
     slider = true,
   } = $props();
 
-  // Derived rather than computed once, so the id tracks the label if a parent
-  // ever changes it. Used to tie the <label> to its <input> for screen readers.
   const id = $derived(`f-${label.replace(/\W+/g, '-').toLowerCase()}`);
 
-  /*
-   * Typing in the box produces a string, and an empty box produces ''. Coerce
-   * here so the rest of the app only ever sees a number — sending '' to the
-   * backend would come back as a JSON parse error rather than a useful
-   * validation message.
-   */
+  // An empty box yields '' — coerce so the backend always gets a number.
   function onInput(event) {
     const next = parseFloat(event.currentTarget.value);
     value = isFinite(next) ? next : 0;

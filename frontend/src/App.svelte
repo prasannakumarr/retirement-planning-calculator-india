@@ -1,21 +1,4 @@
 <script>
-  /*
-   * App.svelte — the root component.
-   *
-   * WHERE THIS FITS: the top of the tree. It owns the one piece of state that
-   * matters (the `input` object), fetches results from the Haskell backend
-   * whenever that state changes, and hands the result to ResultsPanel.
-   *
-   * The central design decision is that there is no "Calculate" button. The
-   * projection re-runs automatically, debounced, as soon as any field changes.
-   * The whole value of this tool is seeing what moves when an assumption
-   * moves, and a submit button puts a wall between the question and the
-   * answer. The previous result stays on screen while a new one is in flight,
-   * so the charts never flash empty mid-drag.
-   *
-   * All arithmetic lives in Haskell. This file decides *when* to ask, never
-   * *what the answer is*.
-   */
   import { onMount } from 'svelte';
   import { fetchDefaults, calculate } from './lib/api.js';
   import InputPanel from './lib/InputPanel.svelte';
@@ -31,7 +14,6 @@
   onMount(async () => {
     try {
       defaults = await fetchDefaults();
-      // Clone, so "Reset to defaults" always has a pristine copy to go back to.
       input = { ...defaults };
     } catch (e) {
       error =
@@ -40,17 +22,6 @@
     }
   });
 
-  /*
-   * Debounced recalculation.
-   *
-   * Dragging a slider fires an input event per pixel; without the delay that
-   * is a hundred round trips a second. 180ms is short enough that the result
-   * still feels attached to the drag.
-   *
-   * `requestId` guards against out-of-order responses: a slow earlier request
-   * must not overwrite the result of a faster later one, which would leave the
-   * charts showing numbers that do not match the form.
-   */
   let timer;
   let requestId = 0;
 
@@ -101,8 +72,6 @@
     </div>
 
     <div class="header-right">
-      <!-- A quiet activity indicator rather than a blocking spinner: the old
-           result stays readable while the new one is computed. -->
       <span class="busy" class:on={busy} aria-live="polite">
         {busy ? 'Calculating…' : ''}
       </span>
@@ -124,8 +93,6 @@
 
       <main>
         {#if error}
-          <!-- A validation failure keeps the last good result on screen and
-               explains what is wrong, rather than blanking the page. -->
           <div class="error inline">{error}</div>
         {/if}
 
@@ -140,13 +107,9 @@
 
   <footer>
     <p>
-      Every number here is computed by the Haskell backend; this page only draws
-      them. The model estimates tax from today's slabs, gives healthcare its
-      own faster inflation, and assumes returns arrive smoothly rather than in
-      the lumpy order real markets deliver them. Read
-      <code>ASSUMPTIONS.md</code> before you make a decision on any of this — it
-      lists what the calculator does, what it deliberately leaves out, and where
-      it is most likely to be wrong.
+      Estimates only, not financial advice. Tax is estimated from today's slabs,
+      healthcare inflates faster than other spending, and returns are assumed
+      to arrive smoothly rather than in the lumpy order real markets deliver them.
     </p>
   </footer>
 </div>
@@ -205,9 +168,6 @@
   }
   .theme:hover { background: var(--surface-sunken); }
 
-  /* Two columns on a desktop, stacked on anything narrower. The form column
-     is fixed-width because its fields do not benefit from extra space; the
-     results column takes everything that is left, because charts do. */
   .layout {
     display: grid;
     grid-template-columns: 330px minmax(0, 1fr);

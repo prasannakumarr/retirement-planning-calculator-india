@@ -1,29 +1,4 @@
 <script>
-  /*
-   * InputPanel.svelte — the questions the calculator asks.
-   *
-   * WHERE THIS FITS: the left-hand column of App.svelte. It owns no state of
-   * its own; it binds straight into the `input` object that App holds, and
-   * App re-runs the projection whenever anything here changes.
-   *
-   * The fields are grouped into three sections in order of how confident the
-   * user can be about the answer:
-   *
-   *   1. About you      — facts you know exactly (your age).
-   *   2. Your money     — facts you can look up (what you spend, what you have).
-   *   3. Assumptions    — guesses about the next thirty years.
-   *   4. Tax & health   — finer assumptions, folded away by default. The
-   *                       defaults are researched and switched on, so a user
-   *                       who never opens the section still gets a realistic
-   *                       answer; the summary line on the fold shows what is
-   *                       being assumed without opening it.
-   *
-   * That ordering matters. Putting the assumptions last, visually separated
-   * and with their defaults justified in the hints, makes it obvious which
-   * numbers are solid and which are the ones to go and argue with. A
-   * calculator that presents "11% returns" with the same confidence as "I am
-   * 32" is misleading its user.
-   */
   import NumberField from './NumberField.svelte';
 
   let { input = $bindable(), onReset } = $props();
@@ -34,7 +9,6 @@
     { value: 'NoTax', label: 'Ignore' },
   ];
 
-  // What the folded section is assuming, so it can be read without opening.
   const taxSummary = $derived(
     input.taxMode === 'EstimateFromSlabs'
       ? `Tax from slabs, ${input.equitySharePercent}% equity`
@@ -48,8 +22,6 @@
 </script>
 
 <form class="panel" onsubmit={(e) => e.preventDefault()}>
-  <!-- One key for every money field below, so no one has to guess whether a
-       figure is monthly or yearly, or today's rupees or future ones. -->
   <p class="units-key">
     Enter every amount in <strong>today's rupees</strong> — the calculator does
     the inflating. Each ₹ field says whether it is <strong>a month</strong>,
@@ -280,7 +252,6 @@
     color: var(--text-secondary);
   }
 
-  /* ---- the folded Tax & healthcare section ---- */
   .fold {
     border-top: 1px solid var(--border);
     padding-top: 10px;

@@ -1,48 +1,18 @@
 <script>
-  /*
-   * LineChart.svelte — a reusable multi-series line/area chart.
-   *
-   * WHERE THIS FITS: used twice on the results page — once for the corpus
-   * growing up to retirement (two series: your path vs the on-track path),
-   * and once for the corpus being spent down through retirement (one series,
-   * drawn as an area).
-   *
-   * It is hand-rolled SVG rather than a charting library. For two chart types
-   * a library would be more code to configure than to write, and drawing the
-   * marks directly is what makes it possible to follow the specs exactly:
-   * 2px lines, >=8px end markers with a 2px surface ring so they stay legible
-   * where they overlap, hairline gridlines that recede, and a hover layer that
-   * is present by default rather than bolted on.
-   *
-   * The component is purely presentational — it receives points and draws
-   * them. Every value it plots was computed by the Haskell backend. With
-   * `stacked`, each series is drawn on top of the ones before it; adding the
-   * bands up to find where each one sits is drawing, not financial arithmetic,
-   * and the tooltip always shows each series' own value rather than the sum.
-   */
   import { compactNumber } from '../format.js';
 
   let {
-    /** [{ name, color, points: [{x, y}], area? }] — drawn in order. */
     series = [],
-    /** Horizontal reference lines: [{ y, label, color }]. */
     rules = [],
     height = 280,
     xLabel = '',
     yLabel = '',
     formatY = compactNumber,
     formatX = (v) => String(v),
-    /** Tooltip heading, given the x value of the hovered column. */
     tooltipTitle = (x) => String(x),
-    /** Draw the series as bands stacked on one another (part-to-whole). */
     stacked = false,
   } = $props();
 
-  /*
-   * Where each series is drawn. Unstacked, that is just its own points.
-   * Stacked, each point is lifted by the series below it, and `base` records
-   * the bottom edge of the band so the fill runs between the two.
-   */
   const drawn = $derived.by(() => {
     if (!stacked) return series.map((s) => ({ ...s, base: null }));
     let below = null;
@@ -54,12 +24,8 @@
     });
   });
 
-  // Measured rather than assumed, so the chart reflows correctly inside a
-  // resizing grid column and on a phone.
   let width = $state(640);
 
-  // Left margin has to clear the widest y tick ("12.5 Cr"), and the right
-  // margin leaves room for end labels without letting them overflow the SVG.
   const M = { top: 12, right: 64, bottom: 34, left: 52 };
 
   const plotW = $derived(Math.max(10, width - M.left - M.right));
@@ -70,26 +36,19 @@
   const xMin = $derived(Math.min(...allPoints.map((p) => p.x)));
   const xMax = $derived(Math.max(...allPoints.map((p) => p.x)));
 
-  // The y scale always starts at zero. A truncated baseline exaggerates
-  // differences, and on a corpus chart that would overstate how far ahead or
-  // behind someone is — the exact thing this app must not do.
   const yMaxRaw = $derived(
     Math.max(0, ...allPoints.map((p) => p.y), ...rules.map((r) => r.y))
   );
 
-  /** Round axis bounds out to human numbers (0 / 2 Cr / 4 Cr …). */
   function niceTicks(max, count = 5) {
     if (!isFinite(max) || max <= 0) return [0, 1];
     const raw = max / count;
     const mag = Math.pow(10, Math.floor(Math.log10(raw)));
     const n = raw / mag;
-    // 2.5 is in the ladder deliberately. Without it a maximum of 12.1 Cr
-    // snaps to a step of 5 and an axis topping out at 15 Cr — a quarter of the
-    // plot left empty above the data. With it the axis tops out at 12.5 Cr.
+    // 2.5 keeps e.g. a 12.1 Cr max on a 12.5 Cr axis rather than 15 Cr.
     const step = (n >= 5 ? 10 : n >= 2.5 ? 5 : n >= 2 ? 2.5 : n >= 1 ? 2 : 1) * mag;
     const ticks = [];
     for (let v = 0; v <= max + step * 1e-6; v += step) ticks.push(v);
-    // Guarantee the top tick is at or above the data.
     if (ticks[ticks.length - 1] < max) ticks.push(ticks[ticks.length - 1] + step);
     return ticks;
   }
@@ -102,7 +61,6 @@
   );
   const sy = $derived((y) => M.top + plotH - (y / yMax) * plotH);
 
-  /** X ticks at round ages, thinned so labels never overlap on a phone. */
   const xTicks = $derived.by(() => {
     const span = xMax - xMin;
     if (span <= 0) return [xMin];
@@ -118,7 +76,6 @@
     return points.map((p, i) => `${i === 0 ? 'M' : 'L'}${sx(p.x)},${sy(p.y)}`).join(' ');
   }
 
-  /** A band between a series' points and the top of the series below it. */
   function bandPath(points, base) {
     if (!points.length) return '';
     const top = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${sx(p.x)},${sy(p.y)}`).join(' ');
@@ -140,16 +97,8 @@
     );
   }
 
-  /*
-   * End labels are only drawn when they demonstrably fit. Two converging
-   * lines produce two labels in the same place, and nudging them apart would
-   * detach each label from its line — so when they are closer than a line
-   * height, the labels are dropped entirely and the legend plus the hover
-   * tooltip carry the identity instead.
-   */
   const endLabels = $derived.by(() => {
-    // A stacked band's top edge is a running total, so labelling it would
-    // print a number that belongs to no single series.
+    // Stacked tops are running totals; overlapping labels are dropped, not nudged.
     if (width < 420 || stacked) return [];
     const ends = series
       .filter((s) => s.points.length)
@@ -167,13 +116,9 @@
     return ends;
   });
 
-  // ---------------------------------------------------------------- hover --
-
   let hoverIndex = $state(null);
   let pointerX = $state(0);
 
-  // Every series shares the same x values (one row per year), so a single
-  // index identifies the whole column.
   const xValues = $derived(series[0] ? series[0].points.map((p) => p.x) : []);
 
   function onMove(event) {
@@ -182,8 +127,6 @@
     pointerX = px;
     if (!xValues.length) return;
 
-    // Nearest column, not the one under the cursor — a 1px-wide hit target
-    // would be unusable.
     let best = 0;
     let bestDist = Infinity;
     for (let i = 0; i < xValues.length; i++) {
@@ -198,20 +141,12 @@
 
   const hoverX = $derived(hoverIndex === null ? 0 : sx(xValues[hoverIndex]));
 
-  // Keep the tooltip inside the chart instead of letting it run off the edge.
   const tooltipLeft = $derived(Math.min(Math.max(hoverX, 70), width - 70));
   const tooltipFlip = $derived(hoverX > width * 0.6);
 </script>
 
-<!--
-  The wrapper is position:relative so the HTML tooltip can be absolutely
-  positioned over the SVG. Tooltips are HTML rather than SVG text because they
-  need wrapping, padding and a background, all of which are painful in SVG.
--->
 <div class="chart" bind:clientWidth={width}>
   {#if series.length > 1}
-    <!-- A legend is always present for two or more series: identity must
-         never depend on the reader matching colours from memory. -->
     <div class="legend">
       {#each series as s (s.name)}
         <span class="legend-item">
@@ -230,9 +165,6 @@
     onmousemove={onMove}
     onmouseleave={() => (hoverIndex = null)}
   >
-    <!-- Gridlines: hairline, solid, one step off the surface. They carry the
-         values that are not directly labelled, so they stay — but they must
-         never compete with the data. -->
     {#each yTicks as t (t)}
       <line x1={M.left} x2={M.left + plotW} y1={sy(t)} y2={sy(t)} class="grid" />
       <text x={M.left - 8} y={sy(t)} class="tick tick-y">{formatY(t)}</text>
@@ -242,15 +174,12 @@
       <text x={sx(t)} y={M.top + plotH + 20} class="tick tick-x">{formatX(t)}</text>
     {/each}
 
-    <!-- Baseline sits above the gridlines so it reads as the axis. -->
     <line
       x1={M.left} x2={M.left + plotW}
       y1={M.top + plotH} y2={M.top + plotH}
       class="axis"
     />
 
-    <!-- Reference rules (e.g. "the corpus you need") are dashed-free hairlines
-         in the series colour, labelled directly so they never rely on hue. -->
     {#each rules as r (r.label)}
       <line
         x1={M.left} x2={M.left + plotW}
@@ -261,8 +190,6 @@
     {/each}
 
     {#if stacked}
-      <!-- Solid bands, each separated from the next by a 2px line in the
-           surface colour — a gap, not a stroke, so it adds no ink. -->
       {#each drawn as s (s.name)}
         <path d={bandPath(s.points, s.base)} fill={s.color} opacity="0.9" />
       {/each}
@@ -276,7 +203,6 @@
         />
       {/each}
     {:else}
-      <!-- Area washes first, so lines and markers sit on top of them. -->
       {#each drawn as s (s.name)}
         {#if s.area}
           <path d={areaPath(s.points)} fill={s.color} opacity="0.1" />
@@ -295,13 +221,10 @@
       {/each}
     {/if}
 
-    <!-- Hover crosshair, drawn under the markers. -->
     {#if hoverIndex !== null}
       <line x1={hoverX} x2={hoverX} y1={M.top} y2={M.top + plotH} class="crosshair" />
       {#each drawn as s (s.name)}
         {#if s.points[hoverIndex]}
-          <!-- The surface-coloured ring is what keeps a dot readable where it
-               crosses another line, and it doubles the hit target. -->
           <circle
             cx={sx(s.points[hoverIndex].x)}
             cy={sy(s.points[hoverIndex].y)}
@@ -314,9 +237,6 @@
       {/each}
     {/if}
 
-    <!-- End markers and labels. Text wears text tokens, never the series
-         colour — a colour light enough to be a good mark is too light to be
-         readable type. The small coloured dot beside it carries identity. -->
     {#each endLabels as e (e.name)}
       <circle
         cx={M.left + plotW} cy={e.y} r="4"

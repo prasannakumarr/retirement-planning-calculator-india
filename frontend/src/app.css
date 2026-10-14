@@ -1,73 +1,31 @@
-/*
- * app.css — global design tokens and reset.
- *
- * WHERE THIS FITS: loaded once by main.js, before any component renders.
- * Every colour used anywhere in the app is declared here as a custom property
- * and referenced by role (--series-projected, --text-muted, …) rather than as
- * a raw hex value. That means the light/dark swap happens in exactly one
- * place, and a component never has to know which theme is active.
- *
- * The chart colours are not chosen by eye. They are slots 1–3 of a
- * colourblind-safe categorical palette, validated against both surfaces for
- * lightness band, chroma, CVD separation and contrast. Colour follows the
- * *entity* throughout the app, never the position in a list:
- *
- *     blue   = your projected corpus        (what you will have)
- *     orange = the corpus you need          (the target)
- *     aqua   = the part of the projection coming from future investments
- *
- * Slots 4-6 are what a year of retirement costs, used wherever that cost is
- * broken down (the required-corpus bar and the yearly-cost chart):
- *
- *     yellow  = living costs
- *     magenta = healthcare
- *     green   = tax
- *
- * In light mode yellow and magenta sit below 3:1 against the surface, so both
- * charts that use them carry a legend, a tooltip and a table view.
- *
- * So the blue line in the growth chart and the blue bar in the comparison
- * chart are the same quantity, and the reader only has to learn that once.
- */
-
 :root {
   color-scheme: light;
 
-  /* Surfaces */
   --page:            #f9f9f7;
   --surface:         #fcfcfb;
   --surface-sunken:  #f2f1ed;
 
-  /* Ink */
   --text-primary:    #0b0b0b;
   --text-secondary:  #52514e;
   --text-muted:      #898781;
 
-  /* Chart chrome */
   --gridline:        #e1e0d9;
   --baseline:        #c3c2b7;
   --border:          rgba(11, 11, 11, 0.10);
 
-  /* Categorical series — validated slots 1-3 */
-  --series-projected: #2a78d6;  /* blue   */
-  --series-required:  #eb6834;  /* orange */
-  --series-future:    #1baf7a;  /* aqua   */
-  --series-living:    #eda100;  /* yellow  */
-  --series-health:    #e87ba4;  /* magenta */
-  --series-tax:       #008300;  /* green   */
+  --series-projected: #2a78d6;
+  --series-required:  #eb6834;
+  --series-future:    #1baf7a;
+  --series-living:    #eda100;
+  --series-health:    #e87ba4;
+  --series-tax:       #008300;
 
-  /* Status — reserved, never reused as a series colour.
-     These are the MARK colours, for dots and fills. */
   --status-good:     #0ca30c;
   --status-warning:  #fab219;
   --status-serious:  #ec835a;
   --status-critical: #d03b3b;
 
-  /* Status TEXT colours are a separate set, and they have to be.
-     On the light surface the warning amber measures 1.79:1 and the green
-     3.27:1 — fine as a coloured dot beside a word, far too weak as the word
-     itself. These are darkened steps of the same hues that clear text
-     contrast, so a status can be spoken in colour without becoming unreadable. */
+  /* Darker text variants of the status colours, for readable contrast. */
   --status-good-text:     #006300;
   --status-warning-text:  #8a5d00;
   --status-critical-text: #b32020;
@@ -76,12 +34,6 @@
   --font: system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
-/*
- * Dark values are declared under two scopes, and both are needed:
- * the media query follows the operating system, while the [data-theme]
- * attribute follows the in-app toggle and must win in both directions.
- * The :not() guard is what lets an explicit light choice beat OS dark.
- */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
@@ -100,10 +52,6 @@
     --series-living:    #c98500;
     --series-health:    #d55181;
     --series-tax:       #008300;
-    /* On the dark surface the relationship inverts: the darkened text steps
-       would disappear against it, while the bright marks clear contrast
-       comfortably. So dark mode's status text is the lighter step, not the
-       darker one. */
     --status-good-text:     #0ca30c;
     --status-warning-text:  #fab219;
     --status-critical-text: #ef6b6b;
@@ -132,8 +80,6 @@
   --status-critical-text: #ef6b6b;
 }
 
-/* ---------------------------------------------------------------- reset -- */
-
 * { box-sizing: border-box; }
 
 html, body {
@@ -159,7 +105,4 @@ h1, h2, h3 {
   line-height: 1.25;
 }
 
-/* Columns of figures must line up vertically, so they get tabular digits.
-   Large standalone numbers deliberately do NOT — tabular figures give every
-   digit the width of a zero, which makes a hero number look gappy. */
 table, .tabular { font-variant-numeric: tabular-nums; }

@@ -1,20 +1,4 @@
 <script>
-  /*
-   * ResultsPanel.svelte — everything the calculator has to say, in order.
-   *
-   * WHERE THIS FITS: the right-hand column of App.svelte. Receives one
-   * `result` object straight from the Haskell backend and renders it. No
-   * arithmetic happens here beyond picking colours and shaping arrays into
-   * chart points — if a number appears on this page, the backend computed it.
-   *
-   * The page is ordered as a answer, not as a dump:
-   *
-   *   1. The verdict         — am I all right?
-   *   2. The two numbers     — what I need vs what I am on course for.
-   *   3. What to do about it — the monthly figure that closes the gap.
-   *   4. The charts          — how it gets there, and what happens after.
-   *   5. The caveats         — why none of this is a promise.
-   */
   import StatTile from './StatTile.svelte';
   import DataTable from './DataTable.svelte';
   import LineChart from './charts/LineChart.svelte';
@@ -25,12 +9,6 @@
 
   const s = $derived(result.summary);
 
-  /*
-   * Verdict -> status colour. These four are the reserved status palette, kept
-   * distinct from the three series colours so a status can never be mistaken
-   * for a chart series. The verdict always appears as words as well, so the
-   * meaning never depends on colour alone.
-   */
   const toneFor = {
     Comfortable: 'good',
     OnTrack: 'good',
@@ -47,17 +25,11 @@
 
   const tone = $derived(toneFor[s.verdict] ?? 'neutral');
 
-  /* Behind, ahead, or near enough exactly on target. "Exactly" is rounding:
-     a gap that formats as 0% is shown as on target rather than as −0%. */
+  // A gap that rounds to 0% counts as on target, not −0%.
   const behind = $derived(s.fundedGapPercent < 0 && signedPercent(s.fundedGapPercent) !== '0%');
   const ahead = $derived(s.fundedGapPercent > 0 && signedPercent(s.fundedGapPercent) !== '0%');
   const sipChangePct = $derived(s.monthlyInvestmentChangePercent);
 
-  // ------------------------------------------------------------- charts ----
-
-  /* Chart 1 — the corpus growing up to the retirement date.
-     Two series, so a legend is mandatory. Blue is always "you", orange is
-     always "the target", in this chart and every other one on the page. */
   const growthSeries = $derived([
     {
       name: 'Your projected corpus',
@@ -71,17 +43,6 @@
     },
   ]);
 
-  /* Chart 2 — the corpus being spent down through retirement.
-     One series, so no legend box: the chart title already names what is
-     plotted and a one-swatch legend would just restate it.
-
-     This plots the corpus in TODAY'S money, not in future rupees, and the
-     distinction matters enormously. Whenever the return beats the withdrawal
-     rate the nominal corpus climbs all the way through retirement — our
-     default scenario "grows" from ₹12.1 Cr to ₹20.9 Cr — which looks like
-     getting richer and is nothing of the sort, because prices have been
-     climbing alongside. Discounted back to today's purchasing power the same
-     plan shows a steady drawdown, which is the truth of it. */
   const drawdownSeries = $derived([
     {
       name: 'Corpus remaining',
@@ -97,10 +58,6 @@
     },
   ]);
 
-  /* Chart 3 — the comparison that the whole page hinges on.
-     The projection is split into the part already saved and the part still to
-     be invested, because "how much of this is already locked in" is the second
-     question everyone asks after "am I all right". */
   const comparisonBars = $derived([
     {
       label: 'Need — safe withdrawal method',
@@ -123,11 +80,6 @@
     },
   ]);
 
-  /* Chart 4 — what the corpus you need is made of.
-     One stacked bar: living costs alone, then what healthcare adds, then what
-     tax adds. The backend computes the three so they sum to the headline;
-     each is the extra corpus that item demands once the ones before it are
-     switched on. Colours are slots 4-6, the "cost of retirement" family. */
   const needBreakdown = $derived([
     {
       label: 'Corpus you need',
@@ -139,9 +91,6 @@
     },
   ]);
 
-  /* Chart 5 — what each year of retirement costs, in today's money.
-     Stacked so the healthcare band can be seen widening while living costs
-     stay flat in real terms. Same three colours as chart 4. */
   const costSeries = $derived([
     {
       name: 'Living costs',
@@ -163,25 +112,18 @@
   const retirementAge = $derived(result.echoedInput.retirementAge);
   const lifeExpectancy = $derived(result.echoedInput.lifeExpectancy);
 
-  /* Above this, healthcare would be crowding out food and rent, and households
-     cut other spending before that happens — so the projection is past what
-     the data supports. */
   const HEALTH_SHARE_WARNING = 60;
 </script>
 
 <div class="results">
-  <!-- 1. THE VERDICT ---------------------------------------------------- -->
   <section class="verdict" data-tone={tone}>
     <div class="verdict-head">
       <span class="dot"></span>
       <span class="verdict-label">{verdictLabel[s.verdict] ?? s.verdict}</span>
     </div>
-    <!-- The hero figure: exactly one per view. -->
     <div class="hero-number">{ratioAsPercent(s.fundedRatio)}</div>
     <div class="hero-caption">of the corpus you need, by age {retirementAge}</div>
 
-    <!-- The gap and what closes it, in the two units people act on: a
-         percentage to judge it, and rupees a month to fix it. -->
     <div class="gap" data-dir={behind ? 'behind' : ahead ? 'ahead' : 'even'}>
       <div class="gap-figure">
         <span class="gap-pct">{signedPercent(s.fundedGapPercent)}</span>
@@ -226,7 +168,6 @@
     <p class="verdict-message">{s.verdictMessage}</p>
   </section>
 
-  <!-- 2. THE TWO NUMBERS ------------------------------------------------ -->
   <div class="tiles">
     <StatTile
       label="Corpus you need at {retirementAge}"
@@ -252,16 +193,12 @@
       note="What {rupees(result.echoedInput.currentMonthlyExpense)} a month becomes after {s.yearsToRetirement} years of {percent(result.echoedInput.inflationPercent, 1)} inflation — plus {compactRupees(s.healthcareMonthlyAtRetirement)} a month for healthcare ({compactRupees(s.healthcareAtRetirement)} a year)."
     />
   </div>
-  <!-- Every lump sum above is in the rupees of the retirement year, which is
-       the single most common misreading of a retirement calculator. Said once,
-       plainly, rather than left to the notes. -->
   <p class="units-note">
     <strong>Future rupees:</strong> corpus figures are one-time lump sums
     priced as they will be at age {retirementAge}, when ₹1 buys far less than
     today. "In today's money" shows what each would buy now.
   </p>
 
-  <!-- 3. WHAT TO DO ABOUT IT -------------------------------------------- -->
   <section class="action">
     {#if s.additionalMonthlyInvestment > 0}
       <h3>Other ways to close the gap</h3>
@@ -282,7 +219,6 @@
     {/if}
   </section>
 
-  <!-- 4. THE CHARTS ------------------------------------------------------ -->
   <section class="card">
     <h3>What you need, and what you will have</h3>
     <p class="card-note">
@@ -392,7 +328,6 @@
     />
   </section>
 
-  <!-- Secondary figures: useful, but not what the page leads with. -->
   <div class="tiles">
     <StatTile
       label="Real return before retirement"
@@ -429,7 +364,6 @@
     />
   </div>
 
-  <!-- 5. THE NUMBERS BEHIND THE CHARTS ----------------------------------- -->
   <details class="card">
     <summary>Year-by-year numbers</summary>
     <p class="card-note">
@@ -443,7 +377,6 @@
 <style>
   .results { display: grid; gap: 18px; }
 
-  /* ---- verdict ---- */
   .verdict {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -461,7 +394,6 @@
     font-weight: 600;
   }
 
-  /* The coloured dot sits beside the words, never instead of them. */
   .dot {
     width: 9px;
     height: 9px;
@@ -474,8 +406,6 @@
   .verdict[data-tone='serious'] .dot  { background: var(--status-serious); }
   .verdict[data-tone='critical'] .dot { background: var(--status-critical); }
 
-  /* The words use the text tokens, not the mark tokens — the dot above is
-     what carries the colour at full strength. */
   .verdict[data-tone='good'] .verdict-label     { color: var(--status-good-text); }
   .verdict[data-tone='warning'] .verdict-label  { color: var(--status-warning-text); }
   .verdict[data-tone='critical'] .verdict-label { color: var(--status-critical-text); }
@@ -493,7 +423,6 @@
     color: var(--text-secondary);
   }
 
-  /* ---- the gap, right under the hero figure ---- */
   .gap {
     margin-top: 12px;
     padding: 12px 14px;
@@ -541,14 +470,12 @@
     max-width: 62ch;
   }
 
-  /* ---- tiles ---- */
   .tiles {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
     gap: 12px;
   }
 
-  /* ---- cards ---- */
   .card, .action {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -570,7 +497,6 @@
   }
 
   .action p { margin-bottom: 8px; }
-
 
   .units-note {
     margin: -6px 0 0;

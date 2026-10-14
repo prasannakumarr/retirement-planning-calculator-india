@@ -1,24 +1,8 @@
 <script>
-  /*
-   * BarChart.svelte — horizontal bars, optionally stacked.
-   *
-   * WHERE THIS FITS: used once, for the "what you need vs what you will have"
-   * comparison on the results page. Horizontal rather than vertical because
-   * the category names are sentences ("Need — safe withdrawal method"), and
-   * horizontal bars give long labels room without rotating them.
-   *
-   * Mark specs followed here: bars capped at 24px so the band keeps some air,
-   * a 4px rounded cap on the data end with the baseline end left square, and
-   * a 2px gap in the surface colour between stacked segments. The gap is what
-   * separates touching segments — never a stroke, which would add ink that
-   * isn't data.
-   */
   import { compactRupees } from '../format.js';
 
   let {
-    /** [{ label, segments: [{ name, value, color }] }] */
     bars = [],
-    /** Shown above the plot when segments carry distinct identities. */
     showLegend = true,
     formatValue = compactRupees,
     barThickness = 22,
@@ -27,8 +11,6 @@
 
   let width = $state(640);
 
-  // Left margin holds the category labels; right margin holds the total at
-  // the bar tip. Both are reserved up front so no text is ever clipped.
   const M = $derived({
     top: 4,
     right: Math.min(96, Math.max(72, width * 0.18)),
@@ -36,8 +18,6 @@
     left: width < 520 ? 0 : 168,
   });
 
-  // On a narrow screen the label moves above its bar instead of beside it,
-  // which keeps the plot usable at phone widths.
   const stackedLabels = $derived(M.left === 0);
   const rowH = $derived(stackedLabels ? rowHeight + 18 : rowHeight);
 
@@ -51,7 +31,6 @@
 
   const scale = $derived((v) => (v / maxTotal) * plotW);
 
-  /** Legend entries, de-duplicated across bars and kept in first-seen order. */
   const legendItems = $derived.by(() => {
     const seen = new Map();
     for (const b of bars) {
@@ -62,11 +41,6 @@
     return [...seen].map(([name, color]) => ({ name, color }));
   });
 
-  /**
-   * A rectangle with its right-hand (data) end rounded and its left-hand
-   * (baseline) end square. Interior segments of a stack pass r = 0, because
-   * only the end of the whole bar is a data end.
-   */
   function barPath(x, y, w, h, r) {
     const rr = Math.max(0, Math.min(r, w, h / 2));
     if (rr === 0) return `M${x},${y} h${w} v${h} h${-w} Z`;
@@ -97,8 +71,6 @@
       {@const top = M.top + i * rowH + labelOffset}
       {@const barY = top + (rowHeight - barThickness) / 2}
 
-      <!-- Category label: beside the bar when there is room, above it when
-           there is not. Text always uses text tokens, never a series colour. -->
       {#if stackedLabels}
         <text x="0" y={top - 6} class="cat-label cat-label-above">{bar.label}</text>
       {:else}
@@ -107,8 +79,6 @@
         </text>
       {/if}
 
-      <!-- Segments. `cursor` walks left to right; each segment is inset by 2px
-           on its left edge so the surface shows through between them. -->
       {#each bar.segments as seg, j (seg.name)}
         {@const prior = bar.segments
           .slice(0, j)
@@ -129,9 +99,6 @@
         {/if}
       {/each}
 
-      <!-- The total, at the tip. Labelling the tip rather than each segment
-           keeps the chart readable; per-segment values live in the tooltip
-           and in the table below. -->
       <text
         x={M.left + scale(totals[i]) + 10}
         y={barY + barThickness / 2}
@@ -141,7 +108,6 @@
       </text>
     {/each}
 
-    <!-- Single baseline all bars grow from. -->
     <line
       x1={M.left} x2={M.left}
       y1={M.top} y2={M.top + bars.length * rowH}

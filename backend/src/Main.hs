@@ -1,11 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
 
--- |
--- Module      : Main
--- Description : Entry point — runs the self-checks, then serves the API.
---
--- Start with @cabal run@ from the @backend@ directory.  The server listens on
--- port 8080; the Svelte frontend runs separately on 5173 and calls across.
 module Main (main) where
 
 import           Control.Monad (forM_, unless)
@@ -19,26 +13,14 @@ import           Web.Scotty    (Options (settings), defaultOptions,
 import           Api           (app)
 import           Calculator    (selfChecks)
 
--- | The port the API listens on.  The frontend's dev proxy expects this.
 port :: Int
 port = 8080
 
--- | Listen on the loopback interface only.
---
--- Scotty's default binds every interface, which would expose this API (and its
--- wide-open CORS policy) to anyone on the same network.  It is only ever
--- meant to be reached by the Vite dev server on the same machine.
+-- Loopback only: Scotty's default binds every interface.
 serverOptions :: Options
 serverOptions = defaultOptions
   { settings = setHost "127.0.0.1" (setPort port defaultSettings) }
 
--- | Run the arithmetic self-checks and __refuse to start__ if any fail.
---
--- This is the belt-and-braces part of the design.  A retirement calculator
--- that is wrong is worse than one that does not run: a server that refuses to
--- boot gets fixed in five minutes, whereas a server that quietly understates
--- a corpus by 20% might never be caught at all.  The checks cost a fraction of
--- a millisecond, so there is no reason not to pay for them on every start.
 runSelfChecks :: IO ()
 runSelfChecks = do
   putStrLn "Running arithmetic self-checks..."
@@ -57,8 +39,6 @@ runSelfChecks = do
 
 main :: IO ()
 main = do
-  -- Without this, output is block-buffered when stdout is piped and the
-  -- startup banner never appears until the process exits.
   hSetBuffering stdout LineBuffering
 
   runSelfChecks

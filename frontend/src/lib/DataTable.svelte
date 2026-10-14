@@ -1,18 +1,4 @@
 <script>
-  /*
-   * DataTable.svelte — the year-by-year numbers behind the charts.
-   *
-   * WHERE THIS FITS: the bottom of ResultsPanel.svelte, inside a <details> so
-   * it is available without dominating the page.
-   *
-   * This exists for two reasons beyond completeness. First, accessibility: a
-   * table view is the fallback for anyone who cannot read the charts, and the
-   * chart palette's light-mode aqua sits below 3:1 contrast, which obliges a
-   * table or visible labels — this provides both. Second, auditability: the
-   * accumulation rows are laid out as opening + invested + growth = closing,
-   * so anyone sceptical of the projection can check the arithmetic on any row
-   * with a calculator.
-   */
   import { rupees, percent } from './format.js';
 
   let { accumulation = [], drawdown = [] } = $props();
@@ -40,11 +26,6 @@
     </button>
   </div>
 
-  <!-- A table is the one element allowed to be wider than the page, so it
-       gets its own horizontal scroll container rather than forcing the whole
-       body to scroll sideways on a phone. -->
-  <!-- Every row is one whole year, and every amount is in that year's rupees
-       except the column that says otherwise. -->
   <p class="units">
     {#if tab === 'accumulation'}
       One row per year. Invested and growth are totals <strong>for the year</strong>;
@@ -103,9 +84,6 @@
             <tr class:empty={row.drwClosingCorpus <= 0}>
               <td>{row.drwAge}</td>
               <td>{rupees(row.drwOpeningCorpus)}</td>
-              <!-- Living + healthcare + tax is what the year calls for; the
-                   withdrawal column is what was actually taken, which falls
-                   short of the sum only once the money runs out. -->
               <td>{rupees(row.drwLivingCost)}</td>
               <td>{rupees(row.drwHealthcareCost)}</td>
               <td>{rupees(row.drwTax)}</td>
@@ -113,9 +91,6 @@
               <td class="muted">{percent(row.drwHealthcareShare, 0)}</td>
               <td>{rupees(row.drwGrowth)}</td>
               <td class="strong">{rupees(row.drwClosingCorpus)}</td>
-              <!-- The same balance in today's purchasing power. Reading the
-                   two closing columns side by side is the clearest way to see
-                   what inflation is quietly doing to the nominal figure. -->
               <td class="muted">{rupees(row.drwClosingReal)}</td>
             </tr>
           {/each}
@@ -192,6 +167,5 @@
   .strong { color: var(--text-primary); font-weight: 600; }
   .muted { color: var(--text-muted); }
 
-  /* Years after the corpus is exhausted, dimmed so the cliff is visible. */
   .empty td { opacity: 0.45; }
 </style>

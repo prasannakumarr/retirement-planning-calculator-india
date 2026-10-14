@@ -2,9 +2,7 @@ cabal-version:      2.4
 name:               retirement-calculator
 version:            0.1.0.0
 synopsis:           A simple retirement planning calculator for the Indian context
-description:        A small JSON API that performs retirement corpus projections.
-                    All financial maths lives in the Calculator module; the Api
-                    module only translates HTTP <-> Haskell values.
+description:        A small JSON API for retirement corpus projections.
 license:            MIT
 author:             Prasanna Kumar
 category:           Finance, Web
@@ -29,10 +27,6 @@ executable retirement-calculator
 
     default-language: Haskell2010
 
-    -- Warnings are turned on deliberately: this is a maths-heavy program and
-    -- an unused binding or an incomplete pattern match is usually a real bug.
-    --
-    -- -threaded is not optional: Warp's timeout manager needs the threaded
-    -- runtime and the server dies on its first request without it.
+    -- -threaded is required by Warp's timeout manager.
     ghc-options:      -Wall -Wcompat -Wincomplete-record-updates
                       -threaded -rtsopts "-with-rtsopts=-N"
