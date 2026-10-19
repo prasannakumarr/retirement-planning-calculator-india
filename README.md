@@ -14,6 +14,20 @@ Built with a Haskell (Scotty) backend that does all the maths and a Svelte front
 All arithmetic lives in the backend, so charts and figures always agree. The
 server runs arithmetic self-checks on start-up and refuses to boot if any fail.
 
+## Screenshots
+
+**Summary** — how far ahead or behind you are, the corpus you need versus the one you're on course for, and how much you could change your monthly investment.
+
+![Summary: percentage of required corpus, surplus and monthly spending at retirement](docs/screenshots/summary.png)
+
+**Charts** — your projected corpus against the on-track path up to retirement, then the corpus drawing down through retirement in today's money.
+
+![Charts: corpus growth to retirement and drawdown in today's money](docs/screenshots/charts.png)
+
+**Key figures and year-by-year table** — real returns, withdrawal rate, healthcare share and tax, plus a table where every row satisfies opening + invested + growth = closing.
+
+![Key figures and year-by-year projection table](docs/screenshots/metrics-and-table.png)
+
 ## Getting started
 
 Requires **GHC ≥ 9.4 with cabal** and **Node 20.19+ or 22.12+**.
